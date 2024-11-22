@@ -44,6 +44,10 @@ app.use(`/api/${adminURL}`, authRoute);
 app.use(notFound);
 app.use(errorHandler);
 
+app.get("/", (req, res) => {
+  res.status(200).send("Server is live and running!");
+});
+
 app.listen(PORT, () => {
   console.log(`Server is running at PORT ${PORT}`);
 });
