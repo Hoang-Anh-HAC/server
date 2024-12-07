@@ -52,7 +52,7 @@ const getAllProdForm = asyncHandler(async (req, res) => {
     const totalForms = await ProdForm.countDocuments();
     const pendingForms = await ProdForm.countDocuments({ status: "pending" });
     const getAllProdForm = await ProdForm.find().sort({
-      status: 1,
+      status: -1,
     });
     res.json({
       totalForms,

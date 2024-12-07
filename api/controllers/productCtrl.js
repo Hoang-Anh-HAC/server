@@ -118,8 +118,170 @@ const deleteProduct = asyncHandler(async (req, res) => {
   }
 });
 
-// Lấy thông tin sản phẩm
+// Lấy một sản phẩm
 const getProduct = asyncHandler(async (req, res) => {
+  const { slug } = req.params;
+
+  try {
+    const foundProduct = await Product.findOne({ slug })
+      .populate("optionIDs", "title")
+      .populate("seriesID", "title")
+      .populate("categoryID", "title")
+      .populate("brandID", "title");
+
+    // Nếu không tìm thấy sản phẩm
+    if (!foundProduct) {
+      return res.status(404).json({ error: "Sản phẩm không tìm thấy" });
+    }
+
+    // Nếu sản phẩm bị disable và không phải admin thì không cho xem
+    if (foundProduct.isDisabled) {
+      return res.status(404).json({ error: "Sản phẩm không tìm thấy" });
+    }
+
+    res.json(foundProduct);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Lấy tất cả sản phẩm
+const getAllProduct = asyncHandler(async (req, res) => {
+  try {
+    const queryObj = { ...req.query };
+    const excludeFields = ["page", "sort", "limit", "fields", "keyword"];
+    excludeFields.forEach((el) => delete queryObj[el]);
+
+    queryObj.isDisabled = false;
+
+    // Xử lý search keyword
+    if (req.query.keyword) {
+      const searchRegex = new RegExp(req.query.keyword, "i");
+      queryObj.$or = [{ title: searchRegex }, { productID: searchRegex }];
+    }
+
+    let queryStr = JSON.stringify(queryObj);
+    queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `$${match}`);
+
+    // Xử lý multiple values (brand, category, etc.)
+    Object.keys(queryObj).forEach((key) => {
+      if (
+        key !== "$or" &&
+        queryObj[key] &&
+        typeof queryObj[key] === "string" &&
+        queryObj[key].includes(",")
+      ) {
+        queryObj[key] = { $in: queryObj[key].split(",") };
+      }
+    });
+
+    let query = Product.find(queryObj);
+
+    // Sắp xếp
+    if (req.query.sort) {
+      let sortBy = req.query.sort;
+
+      // Xử lý sort theo giá
+      switch (sortBy) {
+        case "price_asc":
+          query = query.sort("prices");
+          break;
+        case "price_desc":
+          query = query.sort("-prices");
+          break;
+        case "most_view":
+          query = query.sort("-views");
+          break;
+        case "default":
+          query = query.sort("-createdAt");
+          break;
+        default:
+          sortBy = sortBy.split(",").join(" ");
+          query = query.sort(sortBy);
+      }
+    } else {
+      query = query.sort("-createdAt");
+    }
+
+    // Select fields
+    if (req.query.fields) {
+      const fields = req.query.fields.split(",").join(" ");
+      query = query.select(fields);
+    } else {
+      query = query.select("-__v");
+    }
+
+    // Phân trang
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const skip = (page - 1) * limit;
+    query = query.skip(skip).limit(limit);
+
+    // Thực hiện query
+    const products = await query;
+    const totalProducts = await Product.countDocuments(queryObj);
+
+    res.json({
+      status: "success",
+      results: products.length,
+      totalProducts,
+      currentPage: page,
+      products,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Thêm hàm mới để cập nhật lượt xem
+const updateProductViews = asyncHandler(async (req, res) => {
+  const { slug } = req.params;
+
+  try {
+    const product = await Product.findOneAndUpdate(
+      { slug },
+      { $inc: { views: 1 } },
+      { new: true }
+    );
+
+    if (!product) {
+      return res.status(404).json({ error: "Không tìm thấy sản phẩm" });
+    }
+
+    res.json({ views: product.views });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+const toggleProductStatus = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const product = await Product.findById(id);
+
+    if (!product) {
+      return res.status(404).json({ message: "Không tìm thấy sản phẩm" });
+    }
+
+    const updatedProduct = await Product.findByIdAndUpdate(
+      id,
+      { isDisabled: !product.isDisabled },
+      { new: true }
+    );
+
+    const message = updatedProduct.isDisabled
+      ? "Sản phẩm đã được vô hiệu hóa"
+      : "Sản phẩm đã được kích hoạt";
+
+    res.status(200).json({ message, updatedProduct });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Lấy một sản phẩm cho Admin
+const getProductAdmin = asyncHandler(async (req, res) => {
   const { slug } = req.params;
 
   try {
@@ -139,8 +301,8 @@ const getProduct = asyncHandler(async (req, res) => {
   }
 });
 
-// Lấy tất cả sản phẩm
-const getAllProduct = asyncHandler(async (req, res) => {
+// Lấy tất cả sản phẩm cho Admin
+const getAllProductAdmin = asyncHandler(async (req, res) => {
   try {
     const queryObj = { ...req.query };
     const excludeFields = ["page", "sort", "limit", "fields", "keyword"];
@@ -171,8 +333,26 @@ const getAllProduct = asyncHandler(async (req, res) => {
 
     // Sắp xếp
     if (req.query.sort) {
-      const sortBy = req.query.sort.split(",").join(" ");
-      query = query.sort(sortBy);
+      let sortBy = req.query.sort;
+
+      // Xử lý sort theo giá
+      switch (sortBy) {
+        case "price_asc":
+          query = query.sort("prices");
+          break;
+        case "price_desc":
+          query = query.sort("-prices");
+          break;
+        case "most_view":
+          query = query.sort("-views");
+          break;
+        case "default":
+          query = query.sort("-createdAt");
+          break;
+        default:
+          sortBy = sortBy.split(",").join(" ");
+          query = query.sort(sortBy);
+      }
     } else {
       query = query.sort("-createdAt");
     }
@@ -211,8 +391,12 @@ module.exports = {
   createProduct,
   updateProduct,
   getProduct,
+  getProductAdmin,
   deleteProduct,
   getAllProduct,
+  getAllProductAdmin,
   uploadImages,
   deleteImages,
+  updateProductViews,
+  toggleProductStatus,
 };

@@ -51,10 +51,10 @@ const getAllFormAd = asyncHandler(async (req, res) => {
   try {
     const totalForms = await FormAd.countDocuments();
     const pendingForms = await FormAd.countDocuments({
-      formStatus: "pending",
+      status: "pending",
     });
     const getAllFormAd = await FormAd.find().sort({
-      formStatus: 1,
+      status: -1,
     });
     res.json({
       totalForms,

@@ -10,10 +10,18 @@ const commentSchema = new mongoose.Schema(
   { _id: false }
 );
 
-const specificationSchema = new mongoose.Schema(
+const detailSchema = new mongoose.Schema(
   {
     title: { type: String, required: true },
-    details: { type: String, required: true },
+    description: { type: String, required: true },
+  },
+  { _id: false }
+);
+
+const specificationSchema = new mongoose.Schema(
+  {
+    topic: { type: String }, // `topic` là không bắt buộc
+    details: { type: [detailSchema], required: true }, // `details` vẫn bắt buộc
   },
   { _id: false }
 );
@@ -43,7 +51,7 @@ const productSchema = new mongoose.Schema(
       required: true,
     },
     prices: {
-      type: String,
+      type: Number,
       required: true,
     },
     quantity: {
@@ -63,20 +71,21 @@ const productSchema = new mongoose.Schema(
       lowercase: true,
     },
     comments: [commentSchema],
-    specifications: [specificationSchema],
+    specifications: [specificationSchema], // `specifications` chứa topic (không bắt buộc) và details (bắt buộc)
 
     seriesID: { type: mongoose.Schema.Types.ObjectId, ref: "Series" },
     categoryID: { type: mongoose.Schema.Types.ObjectId, ref: "Category" },
     brandID: { type: mongoose.Schema.Types.ObjectId, ref: "Brand" },
     optionIDs: [{ type: mongoose.Schema.Types.ObjectId, ref: "Option" }],
-
-    arrange: {
-      type: [String],
-      default: [],
-    },
+    relatedProducts: [{ type: String, ref: "Product" }],
     views: {
       type: Number,
       default: 0,
+    },
+
+    isDisabled: {
+      type: Boolean,
+      default: false,
     },
   },
   { timestamps: true }

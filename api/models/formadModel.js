@@ -26,7 +26,7 @@ const formadSchema = new mongoose.Schema(
     message: {
       type: String,
     },
-    formStatus: {
+    status: {
       type: String,
       default: "pending",
       enum: ["pending", "approved"],

@@ -1,4 +1,5 @@
 const Filter = require("../models/filterModel.js");
+const Option = require("../models/optionModel.js");
 const asyncHandler = require("express-async-handler");
 const validateMongoDbId = require("../utils/validateMongodbId.js");
 
@@ -29,6 +30,12 @@ const deleteFilter = asyncHandler(async (req, res) => {
   const { id } = req.params;
   validateMongoDbId(id);
   try {
+    const filter = await Filter.findById(id);
+    if (!filter) {
+      throw new Error("Không tìm thấy filter");
+    }
+    await Option.deleteMany({ _id: { $in: filter.optionIDs } });
+    // Xóa filter
     const deleteFilter = await Filter.findByIdAndDelete(id);
     res.json(deleteFilter);
   } catch (error) {

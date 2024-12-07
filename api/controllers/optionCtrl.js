@@ -38,11 +38,25 @@ const updateOption = asyncHandler(async (req, res) => {
     throw new Error(error);
   }
 });
-
 const deleteOption = asyncHandler(async (req, res) => {
   const { id } = req.params;
   validateMongoDbId(id);
   try {
+    // Tìm option trước khi xóa để lấy filterID
+    const optionToDelete = await Option.findById(id);
+    if (!optionToDelete) {
+      return res.status(404).json({ error: "Không tìm thấy option" });
+    }
+
+    // Nếu option có filterID, xóa optionID khỏi filter
+    if (optionToDelete.filterID) {
+      const Filter = require("../models/filterModel.js");
+      await Filter.findByIdAndUpdate(optionToDelete.filterID, {
+        $pull: { optionIDs: id },
+      });
+    }
+
+    // Xóa option
     const deleteOption = await Option.findByIdAndDelete(id);
     res.json(deleteOption);
   } catch (error) {

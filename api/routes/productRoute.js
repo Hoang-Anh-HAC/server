@@ -8,6 +8,10 @@ const {
   getAllProduct,
   uploadImages,
   deleteImages,
+  updateProductViews,
+  toggleProductStatus,
+  getProductAdmin,
+  getAllProductAdmin,
 } = require("../controllers/productCtrl");
 const {
   productImgResize,
@@ -16,6 +20,12 @@ const {
 const { authMiddleware, isAdmin } = require("../middlewares/authMiddleware");
 
 const router = express.Router();
+
+router.get("/admin", authMiddleware, isAdmin, getAllProductAdmin);
+router.get("/admin/:slug", authMiddleware, isAdmin, getProductAdmin);
+
+router.get("/:slug", getProduct);
+router.get("/", getAllProduct);
 
 router.put(
   "/upload/",
@@ -32,7 +42,13 @@ router.post("/", authMiddleware, isAdmin, createProduct);
 router.put("/:id", authMiddleware, isAdmin, updateProduct);
 router.delete("/:id", authMiddleware, isAdmin, deleteProduct);
 
-router.get("/:slug", getProduct);
-router.get("/", getAllProduct);
+router.put("/:slug/views", updateProductViews);
+
+router.patch(
+  "/:id/toggle-status",
+  authMiddleware,
+  isAdmin,
+  toggleProductStatus
+);
 
 module.exports = router;
