@@ -126,8 +126,8 @@ const getProduct = asyncHandler(async (req, res) => {
     const foundProduct = await Product.findOne({ slug })
       .populate("optionIDs", "title")
       .populate("seriesID", "title")
-      .populate("categoryID", "title")
-      .populate("brandID", "title");
+      .populate("categoryID", "title slug")
+      .populate("brandID", "title slug");
 
     // Nếu không tìm thấy sản phẩm
     if (!foundProduct) {

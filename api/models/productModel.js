@@ -75,9 +75,13 @@ const productSchema = new mongoose.Schema(
 
     seriesID: { type: mongoose.Schema.Types.ObjectId, ref: "Series" },
     categoryID: { type: mongoose.Schema.Types.ObjectId, ref: "Category" },
-    brandID: { type: mongoose.Schema.Types.ObjectId, ref: "Brand" },
+    brandID: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Brand",
+    },
     optionIDs: [{ type: mongoose.Schema.Types.ObjectId, ref: "Option" }],
     relatedProducts: [{ type: String, ref: "Product" }],
+    matchingProducts: [{ type: String, ref: "Product" }],
     views: {
       type: Number,
       default: 0,
