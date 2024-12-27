@@ -2,12 +2,31 @@ const ProdForm = require("../models/prodformModel");
 const asyncHandler = require("express-async-handler");
 const validateMongoDbId = require("../utils/validateMongodbId.js");
 
+const sendEmail = require("../utils/sendEmail");
+
 const createProdForm = asyncHandler(async (req, res) => {
   try {
+    // Tạo ProdForm mới
     const newProdForm = await ProdForm.create(req.body);
-    res.json(newProdForm);
+
+    // Lấy thông tin từ req.body
+    const { email, name, message, phone, prodID } = req.body;
+
+    const adminEmail = "hvthang002.work@gmail.com";
+
+    const subject = "HAC - LIÊN HỆ";
+
+    await sendEmail(adminEmail, subject, name, phone, email, message, prodID);
+
+    // Trả về phản hồi thành công
+    res.json({
+      success: true,
+      message: "ProdForm created and notification email sent to admin.",
+      data: newProdForm,
+    });
   } catch (error) {
-    throw new Error(error);
+    res.status(500);
+    throw new Error(error.message);
   }
 });
 

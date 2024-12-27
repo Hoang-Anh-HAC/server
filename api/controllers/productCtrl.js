@@ -12,6 +12,34 @@ const createProduct = asyncHandler(async (req, res) => {
     if (req.body.title) {
       req.body.slug = slugify(req.body.title);
     }
+
+    if (req.body.relatedProducts) {
+      if (typeof req.body.relatedProducts === 'string') {
+        req.body.relatedProducts = req.body.relatedProducts
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean);
+      } else if (Array.isArray(req.body.relatedProducts)) {
+        req.body.relatedProducts = req.body.relatedProducts
+          .map((item) => item.trim())
+          .filter(Boolean);
+      }
+    }
+
+    // Xử lý matchingProducts
+    if (req.body.matchingProducts) {
+      if (typeof req.body.matchingProducts === 'string') {
+        req.body.matchingProducts = req.body.matchingProducts
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean);
+      } else if (Array.isArray(req.body.matchingProducts)) {
+        req.body.matchingProducts = req.body.matchingProducts
+          .map((item) => item.trim())
+          .filter(Boolean);
+      }
+    }
+
     const existingProduct = await Product.findOne({ slug: req.body.slug });
 
     if (existingProduct) {
@@ -77,6 +105,32 @@ const updateProduct = asyncHandler(async (req, res) => {
   try {
     if (req.body.title) {
       req.body.slug = slugify(req.body.title);
+    }
+    if (req.body.relatedProducts) {
+      if (typeof req.body.relatedProducts === 'string') {
+        req.body.relatedProducts = req.body.relatedProducts
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean);
+      } else if (Array.isArray(req.body.relatedProducts)) {
+        req.body.relatedProducts = req.body.relatedProducts
+          .map((item) => item.trim())
+          .filter(Boolean);
+      }
+    }
+
+    // Xử lý matchingProducts
+    if (req.body.matchingProducts) {
+      if (typeof req.body.matchingProducts === 'string') {
+        req.body.matchingProducts = req.body.matchingProducts
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean);
+      } else if (Array.isArray(req.body.matchingProducts)) {
+        req.body.matchingProducts = req.body.matchingProducts
+          .map((item) => item.trim())
+          .filter(Boolean);
+      }
     }
 
     const updatedProduct = await Product.findByIdAndUpdate(id, req.body, {
