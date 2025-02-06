@@ -14,7 +14,7 @@ const createProduct = asyncHandler(async (req, res) => {
     }
 
     if (req.body.relatedProducts) {
-      if (typeof req.body.relatedProducts === 'string') {
+      if (typeof req.body.relatedProducts === "string") {
         req.body.relatedProducts = req.body.relatedProducts
           .split(",")
           .map((item) => item.trim())
@@ -28,7 +28,7 @@ const createProduct = asyncHandler(async (req, res) => {
 
     // Xử lý matchingProducts
     if (req.body.matchingProducts) {
-      if (typeof req.body.matchingProducts === 'string') {
+      if (typeof req.body.matchingProducts === "string") {
         req.body.matchingProducts = req.body.matchingProducts
           .split(",")
           .map((item) => item.trim())
@@ -107,7 +107,7 @@ const updateProduct = asyncHandler(async (req, res) => {
       req.body.slug = slugify(req.body.title);
     }
     if (req.body.relatedProducts) {
-      if (typeof req.body.relatedProducts === 'string') {
+      if (typeof req.body.relatedProducts === "string") {
         req.body.relatedProducts = req.body.relatedProducts
           .split(",")
           .map((item) => item.trim())
@@ -121,7 +121,7 @@ const updateProduct = asyncHandler(async (req, res) => {
 
     // Xử lý matchingProducts
     if (req.body.matchingProducts) {
-      if (typeof req.body.matchingProducts === 'string') {
+      if (typeof req.body.matchingProducts === "string") {
         req.body.matchingProducts = req.body.matchingProducts
           .split(",")
           .map((item) => item.trim())
@@ -158,8 +158,8 @@ const deleteProduct = asyncHandler(async (req, res) => {
     }
 
     // Xóa các hình ảnh của sản phẩm trên Cloudinary
-    const imageDeletePromises = productToDelete.images.map(
-      (image) => cloudinaryDeleteImg(image.public_id, "images") // Giả sử bạn lưu public_id trong trường images
+    const imageDeletePromises = productToDelete.images.map((image) =>
+      cloudinaryDeleteImg(image.public_id, "images")
     );
     await Promise.all(imageDeletePromises);
 
