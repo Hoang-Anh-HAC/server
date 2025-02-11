@@ -24,7 +24,13 @@ const adminURL = "YF3cEfjECuVa1CbgRijdo2YvGEz5cn4onq46JtUWO2A";
 
 mongoConnect();
 
-app.use(cors());
+app.use(
+  cors({
+    origin: "http://www.hac.com.vn", // Chỉ cho phép yêu cầu từ tên miền này
+    methods: ["GET", "POST", "PUT", "DELETE"], // Các phương thức cho phép
+    credentials: true, // Nếu bạn cần gửi cookie
+  })
+);
 app.use(express.json());
 app.use(bodyParser.json());
 app.use(cookieParser());
