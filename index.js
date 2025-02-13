@@ -29,6 +29,8 @@ app.use(
     origin: [
       "http://www.hac.com.vn",
       "https://www.hac.com.vn",
+      "http://hac.com.vn",
+      "https://hac.com.vn",
       "http://localhost:5173",
       "https://localhost:5173",
     ],
