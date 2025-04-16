@@ -20,7 +20,7 @@ const cookieParser = require("cookie-parser");
 const app = express();
 const PORT = process.env.PORT;
 
-const adminURL = "YF3cEfjECuVa1CbgRijdo2YvGEz5cn4onq46JtUWO2A";
+const adminURL = "admin-hac";
 
 mongoConnect();
 
@@ -33,6 +33,7 @@ app.use(
       "https://hac.com.vn",
       "http://localhost:7000",
       "https://localhost:7000",
+      "https://localhost:5000",
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,

@@ -6,6 +6,7 @@ const {
 } = require("../utils/cloudinary");
 const fs = require("fs");
 const slugify = require("slugify");
+const Filter = require("../models/filterModel");
 
 const createProduct = asyncHandler(async (req, res) => {
   try {
@@ -77,7 +78,6 @@ const uploadImages = asyncHandler(async (req, res) => {
 const deleteImages = asyncHandler(async (req, res) => {
   const { id } = req.params; // Lấy ID từ tham số URL
   try {
-    // Xóa hình ảnh khỏi Cloudinary
     const deleted = await cloudinaryDeleteImg(id, "images");
 
     // Kiểm tra nếu hình ảnh đã bị xóa thành công
@@ -199,6 +199,130 @@ const getProduct = asyncHandler(async (req, res) => {
   }
 });
 
+// const getAllProduct = asyncHandler(async (req, res) => {
+//   try {
+//     const queryObj = { ...req.query };
+//     const excludeFields = ["page", "sort", "limit", "fields", "keyword"];
+//     excludeFields.forEach((el) => delete queryObj[el]);
+
+//     queryObj.isDisabled = false;
+
+//     // 🔍 Xử lý tìm kiếm theo keyword
+//     if (req.query.keyword) {
+//       const searchRegex = new RegExp(req.query.keyword, "i");
+//       queryObj.$or = [{ title: searchRegex }, { productID: searchRegex }];
+//     }
+
+//     // 📌 Lấy danh sách Filter để ánh xạ optionID → filterID
+//     const filters = await Filter.find({}, { _id: 1, optionIDs: 1 });
+
+//     // 📌 Tạo ánh xạ optionID → filterID
+//     const optionToFilterMap = {};
+//     filters.forEach(({ _id, optionIDs }) => {
+//       optionIDs.forEach((optionID) => {
+//         optionToFilterMap[optionID.toString()] = _id.toString();
+//       });
+//     });
+
+//     // 🔍 Xử lý lọc theo optionIDs
+//     let productIDGroups = []; // Lưu các nhóm ID sản phẩm theo từng filterID
+//     if (queryObj.optionIDs) {
+//       const selectedOptionIDs = queryObj.optionIDs.split(",");
+
+//       // Nhóm optionIDs theo filterID
+//       const filterGroups = {};
+//       selectedOptionIDs.forEach((optionID) => {
+//         const filterID = optionToFilterMap[optionID];
+//         if (filterID) {
+//           if (!filterGroups[filterID]) filterGroups[filterID] = [];
+//           filterGroups[filterID].push(optionID);
+//         }
+//       });
+
+//       // 📌 Tìm danh sách sản phẩm phù hợp với từng nhóm điều kiện
+//       for (const filterID in filterGroups) {
+//         const options = filterGroups[filterID];
+
+//         // Lấy danh sách sản phẩm có ít nhất một giá trị trong nhóm filterID này
+//         const productsInGroup = await Product.find({
+//           [`filters.${filterID}`]: { $in: options },
+//         }).select("_id");
+
+//         const productIDs = productsInGroup.map((p) => p._id.toString());
+//         productIDGroups.push(productIDs);
+//       }
+//     }
+
+//     // 📌 Xác định danh sách sản phẩm thỏa mãn tất cả nhóm filter đã chọn
+//     let finalProductIDs = [];
+//     if (productIDGroups.length > 0) {
+//       finalProductIDs = productIDGroups.reduce((acc, group) => {
+//         if (acc.length === 0) return group;
+//         return acc.filter((id) => group.includes(id)); // Lọc những sản phẩm có mặt trong tất cả nhóm
+//       }, []);
+//     }
+
+//     console.log("🔥 Danh sách sản phẩm sau lọc:", finalProductIDs);
+
+//     let query = Product.find(
+//       finalProductIDs.length ? { _id: { $in: finalProductIDs } } : {}
+//     );
+
+//     // 📌 Xử lý sắp xếp
+//     if (req.query.sort) {
+//       let sortBy = req.query.sort;
+//       switch (sortBy) {
+//         case "price_asc":
+//           query = query.sort("prices");
+//           break;
+//         case "price_desc":
+//           query = query.sort("-prices");
+//           break;
+//         case "most_view":
+//           query = query.sort("-views");
+//           break;
+//         case "default":
+//           query = query.sort("-createdAt");
+//           break;
+//         default:
+//           sortBy = sortBy.split(",").join(" ");
+//           query = query.sort(sortBy);
+//       }
+//     } else {
+//       query = query.sort("-createdAt");
+//     }
+
+//     // 📌 Xử lý chọn trường dữ liệu trả về
+//     if (req.query.fields) {
+//       const fields = req.query.fields.split(",").join(" ");
+//       query = query.select(fields);
+//     } else {
+//       query = query.select("-__v");
+//     }
+
+//     // 📌 Xử lý phân trang
+//     const page = parseInt(req.query.page, 10) || 1;
+//     const limit = parseInt(req.query.limit, 10) || 10;
+//     const skip = (page - 1) * limit;
+//     query = query.skip(skip).limit(limit);
+
+//     // 📌 Thực hiện query
+//     const products = await query;
+//     const totalProducts = finalProductIDs.length;
+
+//     res.json({
+//       status: "success",
+//       results: products.length,
+//       totalProducts,
+//       currentPage: page,
+//       products,
+//     });
+//   } catch (error) {
+//     console.error("🔥 Lỗi API getAllProduct:", error.message);
+//     res.status(500).json({ error: error.message });
+//   }
+// });
+
 // Lấy tất cả sản phẩm
 const getAllProduct = asyncHandler(async (req, res) => {
   try {
@@ -217,25 +341,32 @@ const getAllProduct = asyncHandler(async (req, res) => {
     let queryStr = JSON.stringify(queryObj);
     queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `$${match}`);
 
-    // Xử lý multiple values (brand, category, etc.)
+    // Xử lý lọc nhiều tiêu chí
+    const filterConditions = [];
+
     Object.keys(queryObj).forEach((key) => {
-      if (
-        key !== "$or" &&
-        queryObj[key] &&
-        typeof queryObj[key] === "string" &&
-        queryObj[key].includes(",")
-      ) {
-        queryObj[key] = { $in: queryObj[key].split(",") };
+      const value = queryObj[key];
+
+      if (typeof value === "string" && value.includes(",")) {
+        // Nếu một tiêu chí có nhiều giá trị → Dùng $in (cho phép một trong số đó)
+        const values = value.split(",");
+        filterConditions.push({ [key]: { $all: values } });
+      } else {
+        // Nếu tiêu chí có một giá trị duy nhất → Phải thỏa mãn chính xác giá trị đó
+        filterConditions.push({ [key]: value });
       }
     });
 
-    let query = Product.find(queryObj);
+    // Nếu có nhiều tiêu chí khác nhau, dùng $and để sản phẩm phải thỏa mãn tất cả tiêu chí
+    const finalQuery =
+      filterConditions.length > 0 ? { $and: filterConditions } : {};
+
+    let query = Product.find(finalQuery);
 
     // Sắp xếp
     if (req.query.sort) {
       let sortBy = req.query.sort;
 
-      // Xử lý sort theo giá
       switch (sortBy) {
         case "price_asc":
           query = query.sort("prices");
@@ -273,7 +404,7 @@ const getAllProduct = asyncHandler(async (req, res) => {
 
     // Thực hiện query
     const products = await query;
-    const totalProducts = await Product.countDocuments(queryObj);
+    const totalProducts = await Product.countDocuments(finalQuery);
 
     res.json({
       status: "success",

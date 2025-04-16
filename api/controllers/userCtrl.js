@@ -26,7 +26,7 @@ const loginAdmin = asyncHandler(async (req, res) => {
   const findAdmin = await User.findOne({ username });
   if (findAdmin.role !== "admin") throw new Error("Not Authorised");
   if (findAdmin && (await findAdmin.isPasswordMatched(password))) {
-    const refreshToken = await generateTokenRefresh(findAdmin?.id);
+    const refreshToken = generateTokenRefresh(findAdmin?.id);
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true, // Chỉ có thể truy cập qua HTTP, không thể truy cập qua JavaScript
